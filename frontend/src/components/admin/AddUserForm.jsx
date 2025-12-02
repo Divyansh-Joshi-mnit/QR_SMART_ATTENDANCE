@@ -74,7 +74,6 @@ const AddUserForm = ({ onSuccess }) => {
                 <input 
                     type="text" required className="input-field bg-slate-100" 
                     value={formData.password}
-                    readOnly
                     // In a real app, you'd let admin set this or auto-generate email
                 />
                 <p className="text-xs text-slate-500 mt-1">Default password: password123</p>

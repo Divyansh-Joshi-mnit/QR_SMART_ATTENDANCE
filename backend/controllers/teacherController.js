@@ -157,20 +157,11 @@ exports.getSessionDetails = async (req, res) => {
 // @route   GET /api/teacher/sessions/:id/attendance
 // @access  Private (Teacher)
 exports.getSessionAttendance = async (req, res) => {
+    // This requires the Attendance model, requiring circular dependency check in your mind
+    // Ideally, import it at the top.
+    
     try {
-        const sessionId = req.params.id;
-
-        // Ensure session exists and belongs to a course owned by this teacher
-        const session = await Session.findById(sessionId).populate('course');
-        if (!session) {
-            return res.status(404).json({ message: 'Session not found' });
-        }
-
-        if (session.course.teacher.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Not authorized for this session' });
-        }
-
-        const attendance = await Attendance.find({ session: sessionId })
+        const attendance = await Attendance.find({ session: (req.params.id) })
             .populate('student', 'rollNumber user') // Get student details
             .populate({
                 path: 'student',

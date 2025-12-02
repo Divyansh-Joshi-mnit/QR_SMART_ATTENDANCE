@@ -137,6 +137,8 @@ const ViewAttendance = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    
+
     // 1. Load Sessions for this Course
     useEffect(() => {
         const fetchData = async () => {
