@@ -26,6 +26,6 @@ const sessionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Index to automatically expire sessions if needed, though we handle logic in controller
-sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// sessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('Session', sessionSchema);

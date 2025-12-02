@@ -69,9 +69,8 @@ exports.getSessionAttendance = async (req, res) => {
     // This requires the Attendance model, requiring circular dependency check in your mind
     // Ideally, import it at the top.
     
-    
     try {
-        const attendance = await Attendance.find({ session: Number(req.params.id) })
+        const attendance = await Attendance.find({ session: (req.params.id) })
             .populate('student', 'rollNumber user') // Get student details
             .populate({
                 path: 'student',

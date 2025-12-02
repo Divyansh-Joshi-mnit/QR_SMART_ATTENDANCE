@@ -135,6 +135,8 @@ const ViewAttendance = () => {
     const [attendanceData, setAttendanceData] = useState([]);
     const [courseInfo, setCourseInfo] = useState(null);
 
+    
+
     // 1. Load Sessions for this Course
     useEffect(() => {
         const fetchData = async () => {
