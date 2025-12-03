@@ -12,6 +12,7 @@ import LiveSession from './pages/teacher/LiveSession';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageCourses from './pages/admin/ManageCourses';
 import CourseDetails from './pages/admin/CourseDetails';
+import ManageUsers from './pages/admin/ManageUsers';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import GenerateQR from './pages/teacher/GenerateQR';
 import ViewAttendance from './pages/teacher/ViewAttendance';
@@ -69,6 +70,7 @@ function App() {
             <ProtectedRoute allowedRoles={['admin']}>
                <Routes>
                   <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="users" element={<ManageUsers />} />
                   <Route path="courses" element={<ManageCourses />} />
                   <Route path="courses/:courseId" element={<CourseDetails />} />
                </Routes>

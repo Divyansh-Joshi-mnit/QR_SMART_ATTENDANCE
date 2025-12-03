@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import QRCode from "react-qr-code";
-import { Clock, AlertTriangle, Maximize } from 'lucide-react';
+import { Clock, X, Maximize2, Minimize2 } from 'lucide-react';
 
 const QRCodeDisplay = ({ qrData, expiresAt, courseName, onFullScreen }) => {
   const [timeLeft, setTimeLeft] = useState('');
@@ -23,62 +23,91 @@ const QRCodeDisplay = ({ qrData, expiresAt, courseName, onFullScreen }) => {
       const now = Date.now();
       let remainingSec = Math.floor((expiryMs - now) / 1000);
 
-      if (remainingSec <= 0) {
-        setTimeLeft('EXPIRED');
-        setIsExpired(true);
-        return false; // signal to stop interval
-      }
-
-      const minutes = Math.floor(remainingSec / 60);
-      const seconds = remainingSec % 60;
-      setTimeLeft(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
-      setIsExpired(false);
-      return true; // keep running
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            qrContainerRef.current?.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+            setIsFullscreen(true);
+        } else {
+            document.exitFullscreen();
+            setIsFullscreen(false);
+        }
     };
 
-    // Run immediately so first render is accurate
-    if (!update()) return; // expired already
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
 
-    // Then update every second
-    const interval = setInterval(() => {
-      const keep = update();
-      if (!keep) clearInterval(interval);
-    }, 1000);
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
 
-    return () => clearInterval(interval);
-  }, [expiresAt]);
+    return (
+        <div 
+            ref={qrContainerRef}
+            className={`relative flex items-center justify-center transition-all duration-300 ${
+                isFullscreen
+                    ? 'fixed inset-0 z-50 bg-white'
+                    : 'p-6 bg-white rounded-2xl shadow-xl mx-auto border-4 border-slate-900 flex flex-col items-center max-w-sm'
+            }`}
+        >
+            {/* Non-fullscreen header (course name + expand icon) */}
+            {!isFullscreen && (
+                <div className="w-full flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">{courseName}</h3>
+                    <button 
+                        onClick={toggleFullscreen} 
+                        className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
+                        aria-label="Maximize QR Code"
+                    >
+                        <Maximize2 size={20} />
+                    </button>
+                </div>
+            )}
 
-  return (
-    <div className="flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-xl max-w-sm mx-auto border-4 border-slate-900 relative">
-      <div className="w-full flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
-        <h3 className="font-bold text-lg text-slate-800">{courseName}</h3>
-        <button onClick={onFullScreen} className="text-gray-400 hover:text-blue-600">
-          <Maximize size={20} />
-        </button>
-      </div>
+            {/* Fullscreen minimize button – single control */}
+            {isFullscreen && (
+                <button
+                    onClick={toggleFullscreen}
+                    className="absolute top-4 right-4 p-2 rounded-full bg-black/60 hover:bg-black text-white transition-colors"
+                    aria-label="Minimize QR Code"
+                >
+                    <Minimize2 size={20} />
+                </button>
+            )}
 
-      <div className="p-4 bg-white rounded-xl shadow-inner border border-gray-200">
-        <QRCode 
-          value={isExpired ? "EXPIRED_SESSION" : JSON.stringify(qrData)} 
-          size={200}
-          fgColor={isExpired ? "#94a3b8" : "#000000"}
-        />
-      </div>
+            <div className={`${isFullscreen ? '' : 'p-4 bg-white rounded-xl shadow-inner border border-gray-200 dark:border-slate-700 dark:bg-slate-800'}`}>
+                {/* The QR Data is encrypted string from backend */}
+                <QRCode 
+                    value={isExpired ? "EXPIRED_SESSION" : JSON.stringify(qrData)} 
+                    size={isFullscreen ? 420 : 200}
+                    fgColor={isExpired ? "#94a3b8" : "#000000"}
+                    bgColor="#ffffff"
+                />
+            </div>
+            {/* Countdown + helper text only in normal (non-fullscreen) mode */}
+            {!isFullscreen && (
+                <>
+                    {/* Countdown Timer */}
+                    <div className="mt-4 flex items-center justify-center gap-2">
+                        <Clock className={`w-4 h-4 ${isExpired ? 'text-red-500' : 'text-green-500'}`} />
+                        <span className={`text-sm font-medium ${isExpired ? 'text-red-600' : 'text-green-600'}`}>
+                            {isExpired ? 'Session Expired' : timeLeft}
+                        </span>
+                    </div>
 
-      <div className={`mt-6 flex items-center gap-2 px-6 py-2 rounded-full font-mono font-bold text-xl transition-colors ${
-          isExpired ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-700'
-      }`}>
-        {isExpired ? <AlertTriangle size={24} /> : <Clock size={24} />}
-        {timeLeft}
-      </div>
-      
-      <p className="mt-4 text-center text-sm text-gray-500">
-        {isExpired 
-            ? "This session has ended. Please generate a new code." 
-            : "Scan with student app to mark attendance"}
-      </p>
-    </div>
-  );
-};
+                    <p className="mt-4 text-center text-sm text-gray-500">
+                        {isExpired 
+                            ? "This session has ended. Please generate a new code." 
+                            : "Scan with student app to mark attendance"}
+                    </p>
+                </>
+            )}
+        </div>
+    );
+}
+;
 
 export default QRCodeDisplay;

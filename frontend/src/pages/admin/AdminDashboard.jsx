@@ -29,18 +29,35 @@
 //     };
 
 //     return (
-//         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-10">
+//         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-10 text-slate-800 dark:text-slate-100">
 //             <Navbar title="Administrator Portal" />
 
 //             <div className="container mx-auto px-4 mt-8">
 //                 <h1 className="text-3xl font-bold text-slate-800 dark:text-white mb-6">System Overview</h1>
 
 //                 {/* Statistics Cards */}
-//                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-//                     <StatCard icon={Users} label="Total Students" value={stats.students} color="bg-blue-500" />
-//                     <StatCard icon={Users} label="Total Teachers" value={stats.teachers} color="bg-indigo-500" />
-//                     <StatCard icon={BookOpen} label="Active Courses" value={stats.courses} color="bg-purple-500" />
-//                     <StatCard icon={BarChart3} label="Attendance Logs" value={stats.totalAttendanceLogs} color="bg-emerald-500" />
+//                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+//                     <StatCard 
+//                         icon={Users} 
+//                         label="Total Students" 
+//                         value={stats.students} 
+//                         color="bg-blue-500" 
+//                         onClick={() => navigate('/admin/users?type=students')}
+//                     />
+//                     <StatCard 
+//                         icon={Users} 
+//                         label="Total Teachers" 
+//                         value={stats.teachers} 
+//                         color="bg-indigo-500" 
+//                         onClick={() => navigate('/admin/users?type=teachers')}
+//                     />
+//                     <StatCard 
+//                         icon={BookOpen} 
+//                         label="Active Courses" 
+//                         value={stats.courses} 
+//                         color="bg-purple-500" 
+//                         onClick={() => navigate('/admin/courses')}
+//                     />
 //                 </div>
 
 //                 {/* Quick Actions */}
@@ -162,11 +179,28 @@ const AdminDashboard = () => {
                 <h1 className="text-3xl font-bold text-slate-800 dark:text-white mb-6">System Overview</h1>
 
                 {/* Statistics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-                    <StatCard icon={Users} label="Total Students" value={stats.students} color="bg-blue-500" />
-                    <StatCard icon={Users} label="Total Teachers" value={stats.teachers} color="bg-indigo-500" />
-                    <StatCard icon={BookOpen} label="Active Courses" value={stats.courses} color="bg-purple-500" />
-                    <StatCard icon={BarChart3} label="Attendance Logs" value={stats.totalAttendanceLogs} color="bg-emerald-500" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <StatCard 
+                        icon={Users} 
+                        label="Total Students" 
+                        value={stats.students} 
+                        color="bg-blue-500" 
+                        onClick={() => navigate('/admin/users?type=students')}
+                    />
+                    <StatCard 
+                        icon={Users} 
+                        label="Total Teachers" 
+                        value={stats.teachers} 
+                        color="bg-indigo-500" 
+                        onClick={() => navigate('/admin/users?type=teachers')}
+                    />
+                    <StatCard 
+                        icon={BookOpen} 
+                        label="Active Courses" 
+                        value={stats.courses} 
+                        color="bg-purple-500" 
+                        onClick={() => navigate('/admin/courses')}
+                    />
                 </div>
 
                 {/* Quick Actions */}

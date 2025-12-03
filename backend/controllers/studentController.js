@@ -5,6 +5,21 @@ const Enrollment = require('../models/Enrollment.js');
 const Course = require('../models/Course.js');
 const { validateQRData } = require('../utils/qrGenerator.js');
 
+// Helper: ensure session is writable (active and not expired)
+const ensureSessionWritable = async (sessionId) => {
+    const session = await Session.findById(sessionId);
+    if (!session) {
+        throw new Error('Session not found');
+    }
+
+    const now = new Date();
+    if (!session.isActive || now > new Date(session.expiresAt)) {
+        throw new Error('Session is inactive or expired');
+    }
+
+    return session;
+};
+
 // @desc    Mark attendance via QR scan
 // @route   POST /api/student/mark-attendance
 // @access  Private (Student)
@@ -24,14 +39,12 @@ exports.markAttendance = async (req, res) => {
 
         const { sessionId, courseId } = decryptedData;
 
-        // 2. Validate Session Expiry (Database check)
-        const session = await Session.findById(sessionId);
-        if (!session || !session.isActive) {
-            return res.status(400).json({ message: 'Session is inactive or invalid' });
-        }
-        
-        if (new Date() > new Date(session.expiresAt)) {
-            return res.status(400).json({ message: 'Session has expired' });
+        // 2. Validate session is still writable (active and not expired)
+        let session;
+        try {
+            session = await ensureSessionWritable(sessionId);
+        } catch (err) {
+            return res.status(400).json({ message: err.message || 'Session is inactive or expired' });
         }
 
         // 3. Get Student Profile

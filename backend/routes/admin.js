@@ -8,6 +8,9 @@ const {
     getCourseDetails,
     getStudentByRollNumber,
     enrollStudent,
+    unenrollStudentFromCourse,
+    getAllStudents,
+    getAllTeachers,
     deleteCourse,
     deleteStudent,
     deleteTeacher
@@ -25,7 +28,10 @@ router.get('/courses/:id', getCourseDetails);
 router.post('/courses', createCourse);
 router.delete('/courses/:id', deleteCourse);
 router.post('/courses/:courseId/enroll', enrollStudent);
+router.delete('/courses/:courseId/enrollments/:enrollmentId', unenrollStudentFromCourse);
 router.get('/students/:rollNumber', getStudentByRollNumber);
+router.get('/students', getAllStudents);
+router.get('/teachers', getAllTeachers);
 router.delete('/students/:id', deleteStudent);
 router.delete('/teachers/:id', deleteTeacher);
 router.get('/users', getAllUsers);

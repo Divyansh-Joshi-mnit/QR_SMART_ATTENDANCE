@@ -16,7 +16,11 @@ const Modal = ({ isOpen, onClose, title, children }) => {
                 >
                     <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
                         <h3 className="text-lg font-bold text-slate-800 dark:text-white">{title}</h3>
-                        <button onClick={onClose} className="p-2 hover:bg-red-100 hover:text-red-500 rounded-full transition-colors">
+                        <button
+                            onClick={onClose}
+                            className="p-2 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            aria-label="Close"
+                        >
                             <X size={20} />
                         </button>
                     </div>

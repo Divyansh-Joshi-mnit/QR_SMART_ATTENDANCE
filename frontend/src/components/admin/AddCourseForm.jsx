@@ -43,11 +43,23 @@ const AddCourseForm = ({ onSuccess }) => {
         }
     };
 
+    const handleClear = () => {
+        setFormData({
+            name: '',
+            code: '',
+            department: '',
+            credits: 3,
+            semester: 1,
+            teacherId: '',
+            description: ''
+        });
+    };
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 text-slate-700 dark:text-slate-100">
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="label">
+                    <label className="label text-slate-700 dark:text-slate-100">
                         Course Name <span className="text-red-500">*</span>
                     </label>
                     <input 
@@ -58,10 +70,10 @@ const AddCourseForm = ({ onSuccess }) => {
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Enter the full name of the course</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">Enter the full name of the course</p>
                 </div>
                 <div>
-                    <label className="label">
+                    <label className="label text-slate-700 dark:text-slate-100">
                         Course Code <span className="text-red-500">*</span>
                     </label>
                     <input 
@@ -72,13 +84,13 @@ const AddCourseForm = ({ onSuccess }) => {
                         value={formData.code}
                         onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Unique course identifier (e.g., CS302, EE201)</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">Unique course identifier (e.g., CS302, EE201)</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <label className="label">
+                    <label className="label text-slate-700 dark:text-slate-100">
                         Department <span className="text-red-500">*</span>
                     </label>
                     <input 
@@ -89,10 +101,10 @@ const AddCourseForm = ({ onSuccess }) => {
                         value={formData.department}
                         onChange={(e) => setFormData({...formData, department: e.target.value})}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Department offering this course (e.g., CSE, ECE, ME)</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">Department offering this course (e.g., CSE, ECE, ME)</p>
                 </div>
                 <div>
-                    <label className="label">
+                    <label className="label text-slate-700 dark:text-slate-100">
                         Semester <span className="text-red-500">*</span>
                     </label>
                     <input 
@@ -103,12 +115,12 @@ const AddCourseForm = ({ onSuccess }) => {
                         value={formData.semester}
                         onChange={(e) => setFormData({...formData, semester: e.target.value})}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Which semester is this course offered in? (1-8)</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">Which semester is this course offered in? (1-8)</p>
                 </div>
             </div>
 
             <div>
-                <label className="label">
+                <label className="label text-slate-700 dark:text-slate-100">
                     Credits <span className="text-red-500">*</span>
                 </label>
                 <input 
@@ -119,11 +131,11 @@ const AddCourseForm = ({ onSuccess }) => {
                     value={formData.credits}
                     onChange={(e) => setFormData({...formData, credits: parseInt(e.target.value)})}
                 />
-                <p className="text-xs text-gray-500 mt-1">Number of credit hours for this course (typically 1-6)</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">Number of credit hours for this course (typically 1-6)</p>
             </div>
 
             <div>
-                <label className="label">
+                <label className="label text-slate-700 dark:text-slate-100">
                     Assign Teacher <span className="text-red-500">*</span>
                 </label>
                 <select 
@@ -139,19 +151,29 @@ const AddCourseForm = ({ onSuccess }) => {
                         </option>
                     ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Select the teacher who will teach this course</p>
+                <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">Select the teacher who will teach this course</p>
                 {teachers.length === 0 && (
                     <p className="text-xs text-red-500 mt-1">No teachers found. Please register a teacher first.</p>
                 )}
             </div>
 
-            <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full btn-primary mt-4"
-            >
-                {loading ? 'Creating...' : 'Create Course'}
-            </button>
+            <div className="flex gap-3 mt-4">
+                <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="flex-1 btn-primary"
+                >
+                    {loading ? 'Creating...' : 'Create Course'}
+                </button>
+                <button
+                    type="button"
+                    onClick={handleClear}
+                    disabled={loading}
+                    className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 text-sm font-medium"
+                >
+                    Clear
+                </button>
+            </div>
         </form>
     );
 };

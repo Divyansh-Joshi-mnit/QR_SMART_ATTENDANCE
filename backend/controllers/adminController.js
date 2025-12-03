@@ -27,6 +27,34 @@ exports.getSystemStats = async (req, res) => {
     }
 };
 
+// @desc    Get all students with user info
+// @route   GET /api/admin/students
+// @access  Private (Admin)
+exports.getAllStudents = async (req, res) => {
+    try {
+        const students = await Student.find()
+            .populate('user', 'name email role')
+            .sort({ createdAt: -1 });
+        res.json(students);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get all teachers with user info
+// @route   GET /api/admin/teachers
+// @access  Private (Admin)
+exports.getAllTeachers = async (req, res) => {
+    try {
+        const teachers = await Teacher.find()
+            .populate('user', 'name email role')
+            .sort({ createdAt: -1 });
+        res.json(teachers);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Create a new course
 // @route   POST /api/admin/courses
 // @access  Private (Admin)
@@ -193,6 +221,45 @@ exports.enrollStudent = async (req, res) => {
 
         res.status(201).json(populatedEnrollment);
     } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Unenroll a student from a specific course (keep student record)
+// @route   DELETE /api/admin/courses/:courseId/enrollments/:enrollmentId
+// @access  Private (Admin)
+exports.unenrollStudentFromCourse = async (req, res) => {
+    try {
+        const { courseId, enrollmentId } = req.params;
+
+        const enrollment = await Enrollment.findById(enrollmentId);
+        if (!enrollment) {
+            return res.status(404).json({ message: 'Enrollment not found' });
+        }
+
+        if (String(enrollment.course) !== String(courseId)) {
+            return res.status(400).json({ message: 'Enrollment does not belong to this course' });
+        }
+
+        // Mark enrollment as Dropped instead of hard-deleting for audit/history
+        enrollment.status = 'Dropped';
+        await enrollment.save();
+
+        // Remove course from student's enrolledCourses array (if present)
+        const student = await Student.findById(enrollment.student);
+        if (student) {
+            const beforeCount = student.enrolledCourses.length;
+            student.enrolledCourses = student.enrolledCourses.filter(
+                (cid) => String(cid) !== String(courseId)
+            );
+            if (student.enrolledCourses.length !== beforeCount) {
+                await student.save();
+            }
+        }
+
+        return res.json({ message: 'Student unenrolled from course successfully' });
+    } catch (error) {
+        console.error('Error unenrolling student from course:', error);
         res.status(500).json({ message: error.message });
     }
 };
