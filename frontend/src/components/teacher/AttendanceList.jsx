@@ -1,18 +1,134 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Download } from 'lucide-react';
+import { CheckCircle, XCircle, Download, User, UserCheck, UserX } from 'lucide-react';
+import { io } from 'socket.io-client';
+import API from '../../services/api';
 
-const AttendanceList = ({ sessionData, attendanceData, showLiveButton = true }) => {
+const SOCKET_URL = 'http://localhost:5000';
+
+const AttendanceList = ({ sessionData, attendanceData = [], showLiveButton = true }) => {
+    const [students, setStudents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [socket, setSocket] = useState(null);
     const navigate = useNavigate();
+
+    // Initialize socket connection
+    useEffect(() => {
+        const newSocket = io(SOCKET_URL, {
+            transports: ['websocket'],
+        });
+        setSocket(newSocket);
+
+        return () => {
+            newSocket.disconnect();
+        };
+    }, []);
+
+    // Fetch enrolled students for the course linked to this session
+    const fetchEnrolledStudents = useCallback(async () => {
+        const courseId = sessionData?.course?._id || sessionData?.courseId || sessionData?.course;
+        if (!courseId) {
+            // No course yet (e.g. no session selected) – nothing to load
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            // Backend: GET /api/teacher/courses/:id/students -> array of Enrollment docs
+            const res = await API.get(`/teacher/courses/${courseId}/students`);
+            const enrollments = Array.isArray(res.data) ? res.data : [];
+
+            // Map enrollments to flat student objects, all marked absent initially
+            const studentsWithStatus = enrollments.map((enrollment) => {
+                const stu = enrollment.student || {};
+                const userObj = stu.user || { name: 'Unknown Student' };
+
+                return {
+                    _id: stu._id || enrollment._id || `temp-${Math.random().toString(36).substr(2, 9)}`,
+                    user: userObj,
+                    rollNumber: stu.rollNumber || 'N/A',
+                    status: 'absent',
+                    attendanceTime: null,
+                };
+            });
+
+            // Update with actual attendance data if available
+            if (attendanceData && attendanceData.length > 0) {
+                const attendanceMap = {};
+                attendanceData.forEach(record => {
+                    if (record.student) {
+                        attendanceMap[record.student._id] = {
+                            status: 'present',
+                            attendanceTime: record.createdAt
+                        };
+                    }
+                });
+
+                const updatedStudents = studentsWithStatus.map(student => ({
+                    ...student,
+                    status: attendanceMap[student._id]?.status || 'absent',
+                    attendanceTime: attendanceMap[student._id]?.attendanceTime || null
+                }));
+
+                setStudents(updatedStudents);
+            } else {
+                // If no attendance data yet, just set all as absent
+                setStudents(studentsWithStatus);
+            }
+        } catch (err) {
+            console.error('Error fetching enrolled students:', err);
+            setError('Failed to load enrolled students');
+        } finally {
+            setLoading(false);
+        }
+    }, [sessionData, attendanceData]);
+
+    // Set up socket event listeners
+    useEffect(() => {
+        if (!socket || !sessionData?._id) return;
+
+        const handleAttendanceMarked = (data) => {
+            if (data.sessionId === sessionData._id) {
+                setStudents(prevStudents => 
+                    prevStudents.map(student => 
+                        student._id === data.studentId
+                            ? { 
+                                ...student, 
+                                status: 'present',
+                                attendanceTime: new Date().toISOString()
+                            }
+                            : student
+                    )
+                );
+            }
+        };
+
+        socket.on('attendance:marked', handleAttendanceMarked);
+        socket.emit('join:session', { sessionId: sessionData._id });
+
+        return () => {
+            socket.off('attendance:marked', handleAttendanceMarked);
+            socket.emit('leave:session', { sessionId: sessionData._id });
+        };
+    }, [socket, sessionData?._id]);
+
+    // Initial data fetch
+    useEffect(() => {
+        fetchEnrolledStudents();
+    }, [fetchEnrolledStudents]);
     
     const exportToCSV = () => {
-        // Simple CSV Export Logic
         const headers = ["Name", "Roll Number", "Status", "Time"];
-        const rows = attendanceData.map(record => [
-            record.student.user.name,
-            record.student.rollNumber,
-            record.status,
-            new Date(record.createdAt).toLocaleTimeString()
+        const rows = students.map(student => [
+            student.user?.name || 'N/A',
+            student.rollNumber || 'N/A',
+            student.status,
+            student.attendanceTime 
+                ? new Date(student.attendanceTime).toLocaleTimeString() 
+                : '—'
         ]);
         
         const csvContent = "data:text/csv;charset=utf-8," 
@@ -27,31 +143,63 @@ const AttendanceList = ({ sessionData, attendanceData, showLiveButton = true }) 
         link.click();
     };
 
-    if (!sessionData) return <div className="text-gray-500">Select a session to view details.</div>;
+    if (!sessionData) {
+        return <div className="text-gray-500">Select a session to view details.</div>;
+    }
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center p-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span className="ml-2 text-gray-600">Loading attendance data...</span>
+            </div>
+        );
+    }
+
+    if (error) {
+        return <div className="text-red-500 p-4">{error}</div>;
+    }
+
+    const presentCount = students.filter(s => s.status === 'present').length;
+    const absentCount = students.length - presentCount;
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                     <h3 className="text-xl font-bold text-slate-800 dark:text-white">
                         Session: {new Date(sessionData.createdAt).toLocaleDateString()}
                     </h3>
-                    <p className="text-sm text-slate-500">
-                        {new Date(sessionData.createdAt).toLocaleTimeString()} • {attendanceData.length} Students Present
-                    </p>
+                    <div className="flex flex-wrap gap-2 sm:gap-4 text-sm mt-2">
+                        <span className="text-slate-500">
+                            {new Date(sessionData.createdAt).toLocaleTimeString()}
+                        </span>
+                        <span className="flex items-center text-green-600">
+                            <UserCheck size={16} className="mr-1" />
+                            {presentCount} Present
+                        </span>
+                        <span className="flex items-center text-red-500">
+                            <UserX size={16} className="mr-1" />
+                            {absentCount} Absent
+                        </span>
+                        <span className="flex items-center text-slate-500">
+                            <User size={16} className="mr-1" />
+                            {students.length} Total
+                        </span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     {showLiveButton && (
                         <button 
                             onClick={() => navigate(`/teacher/sessions/${sessionData._id}/live`)}
-                            className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-lg transition-colors"
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-lg transition-colors"
                         >
                             Open Live View
                         </button>
                     )}
                     <button 
                         onClick={exportToCSV}
-                        className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg transition-colors"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg transition-colors"
                     >
                         <Download size={16} /> Export CSV
                     </button>
@@ -69,28 +217,46 @@ const AttendanceList = ({ sessionData, attendanceData, showLiveButton = true }) 
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {attendanceData.length > 0 ? (
-                            attendanceData.map((record) => (
-                                <tr key={record._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                    <td className="py-3 px-2 font-medium text-slate-700 dark:text-slate-200">
-                                        {record.student.user.name}
+                        {students.length > 0 ? (
+                            students.map((student) => (
+                                <tr 
+                                    key={student._id} 
+                                    className={`transition-colors ${
+                                        student.status === 'present' 
+                                            ? 'bg-green-50/30 dark:bg-green-900/10' 
+                                            : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                    }`}
+                                >
+                                    <td className="py-3 px-2 font-medium text-slate-800 dark:text-slate-200">
+                                        {student.user?.name || 'N/A'}
                                     </td>
-                                    <td className="py-3 px-2 text-slate-500">{record.student.rollNumber}</td>
+                                    <td className="py-3 px-2 text-slate-500">
+                                        {student.rollNumber || '—'}
+                                    </td>
                                     <td className="py-3 px-2 text-slate-500 text-sm font-mono">
-                                        {new Date(record.createdAt).toLocaleTimeString()}
+                                        {student.attendanceTime 
+                                            ? new Date(student.attendanceTime).toLocaleTimeString() 
+                                            : '—'
+                                        }
                                     </td>
                                     <td className="py-3 px-2">
-                                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                                            <CheckCircle size={12} /> Present
-                                        </span>
+                                        {student.status === 'present' ? (
+                                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
+                                                <CheckCircle size={12} /> Present
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-full">
+                                                <XCircle size={12} /> Absent
+                                            </span>
+                                        )}
                                     </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
                                 <td colSpan="4" className="py-8 text-center text-slate-400">
-                                    No attendance records found for this session.
-                                </td>
+                                {error || 'No students enrolled in this course.'}
+                            </td>
                             </tr>
                         )}
                     </tbody>

@@ -1,16 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/common/Navbar';
 import API from '../../services/api';
 import QRCodeDisplay from '../../components/teacher/QRCodeDisplay';
+import AttendanceList from '../../components/teacher/AttendanceList';
 import { motion } from 'framer-motion';
-import { Play, Users, Clock, ArrowLeft } from 'lucide-react';
+import { Play, Clock, ArrowLeft, X, Loader2 } from 'lucide-react';
+import { io } from 'socket.io-client';
+
+const SOCKET_URL = 'http://localhost:5000';
 
 const GenerateQR = () => {
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState('');
     const [duration, setDuration] = useState(10); // Default 10 mins 
     const [activeSession, setActiveSession] = useState(null);
+    const [attendance, setAttendance] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [isTerminating, setIsTerminating] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchCourses();
@@ -30,6 +39,11 @@ const GenerateQR = () => {
 
     const handleCreateSession = async (e) => {
         e.preventDefault();
+        if (!selectedCourse) {
+            alert('Please select a course');
+            return;
+        }
+        
         setLoading(true);
         try {
             const res = await API.post('/teacher/sessions', {
@@ -37,11 +51,27 @@ const GenerateQR = () => {
                 timeInMinutes: duration
             });
             
-            // Set the session data to display the QR
-            setActiveSession({
-                ...res.data, // contains qrCode, sessionId, expiresAt
-                courseName: courses.find(c => c._id === selectedCourse)?.name
-            });
+            if (res.data) {
+                // Set the session data to display the QR
+                const newSession = {
+                    ...res.data, // contains qrCode, sessionId, expiresAt
+                    courseName: courses.find(c => c._id === selectedCourse)?.name,
+                    _id: res.data.sessionId,
+                    course: { _id: selectedCourse }
+                };
+                
+                setActiveSession(newSession);
+                setError(null);
+                
+                // Fetch initial attendance data
+                try {
+                    const attendanceRes = await API.get(`/teacher/sessions/${res.data.sessionId}/attendance`);
+                    setAttendance(attendanceRes.data || []);
+                } catch (err) {
+                    console.error('Error loading attendance data', err);
+                    setAttendance([]);
+                }
+            }
         } catch (error) {
             const errorMessage = error.response?.data?.message || 'Error creating session';
             alert(errorMessage);
@@ -54,68 +84,153 @@ const GenerateQR = () => {
         }
     };
 
-    const handleCloseSession = async () => {
-        if (!activeSession?.sessionId) {
-            setActiveSession(null);
+    const handleTerminateSession = async () => {
+        if (!window.confirm('Are you sure you want to end this session? This will prevent any further attendance marking.')) {
             return;
         }
+
+        setIsTerminating(true);
         try {
-            await API.put(`/teacher/sessions/${activeSession.sessionId}/cancel`);
-        } catch (error) {
-            console.error('Failed to cancel session', error);
-        } finally {
+            if (activeSession?.sessionId) {
+                await API.put(`/teacher/sessions/${activeSession.sessionId}/cancel`);
+            }
             setActiveSession(null);
+            setAttendance([]);
+            // Don't navigate away, just reset the form
+        } catch (error) {
+            console.error('Failed to terminate session:', error);
+            setError('Failed to terminate session. Please try again.');
+        } finally {
+            setIsTerminating(false);
         }
     };
 
+    // Set up WebSocket connection for real-time updates
+    useEffect(() => {
+        if (!activeSession?.sessionId) return;
+
+        const socket = io(SOCKET_URL, {
+            transports: ['websocket'],
+        });
+
+        socket.on('connect', () => {
+            socket.emit('joinSession', activeSession.sessionId);
+        });
+
+        socket.on('attendance:marked', (payload) => {
+            if (payload.sessionId === activeSession.sessionId) {
+                setAttendance(prev => [...prev, payload.attendance]);
+            }
+        });
+
+        // Fallback polling every 5 seconds in case sockets fail
+        const interval = setInterval(async () => {
+            try {
+                const res = await API.get(`/teacher/sessions/${activeSession.sessionId}/attendance`);
+                setAttendance(res.data || []);
+            } catch (err) {
+                console.error('Polling attendance failed', err);
+            }
+        }, 5000);
+
+        return () => {
+            socket.emit('leaveSession', activeSession.sessionId);
+            socket.disconnect();
+            clearInterval(interval);
+        };
+    }, [activeSession?.sessionId]);
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-10">
-            <Navbar title="Classroom Mode" />
+            <Navbar title="Live Session" />
 
-            <div className="container mx-auto px-4 mt-8 flex justify-center">
+            <div className="container mx-auto px-4 mt-8">
+                {activeSession ? (
+                    <div className="flex justify-between items-center mb-6">
+                        <button 
+                            onClick={() => navigate('/teacher/dashboard')}
+                            className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors"
+                        >
+                            <ArrowLeft size={20} /> Back to Dashboard
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading || !selectedCourse || activeSession}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    {activeSession ? 'Session Active' : 'Creating...'}
+                                </>
+                            ) : activeSession ? (
+                                <>
+                                    <Play size={18} className="text-green-300" />
+                                    Session Active
+                                </>
+                            ) : (
+                                <>
+                                    <Play size={18} />
+                                    Start Session
+                                </>
+                            )}
+                        </button>
+                    </div>
+                ) : (
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">Classroom Mode</h1>
+                )}
+
                 {activeSession ? (
                     /* LIVE SESSION VIEW */
                     <motion.div 
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="w-full max-w-4xl"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full max-w-6xl mx-auto"
                     >
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-2">
-                                    <button onClick={handleCloseSession} className="text-slate-500 hover:text-slate-800 flex items-center gap-1">
-                                        <ArrowLeft size={20} /> End Session
-                                    </button>
-                                    <span className="text-slate-300">|</span>
-                                    <span className="text-green-500 font-bold animate-pulse">● Live Session Active</span>
+                        <div className="mb-6">
+                            <div className="flex items-center gap-2 text-green-500 font-medium">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                Live Session Active
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Left: QR Code */}
+                            <div className="lg:col-span-1">
+                                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 sticky top-6">
+                                    <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">Scan QR Code</h3>
+                                    <div className="flex justify-center">
+                                        <QRCodeDisplay 
+                                            qrData={activeSession.qrCode}
+                                            expiresAt={activeSession.expiresAt}
+                                            courseName={activeSession.courseName}
+                                            onFullScreen={() => {}}
+                                        />
+                                    </div>
+                                    <div className="mt-4 text-center">
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                                            Students can scan this QR code to mark attendance
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Left: QR Display */}
-                            <div className="flex justify-center">
-                                <QRCodeDisplay 
-                                    qrData={activeSession.qrCode}
-                                    expiresAt={activeSession.expiresAt}
-                                    courseName={activeSession.courseName}
-                                    onFullScreen={() => {}} // Add fullscreen logic if needed
+                            {/* Right: Attendance List */}
+                            <div className="lg:col-span-2">
+                                <AttendanceList
+                                    sessionData={{
+                                        ...activeSession,
+                                        _id: activeSession.sessionId || activeSession._id,
+                                        course: {
+                                            _id: selectedCourse,
+                                            name: courses.find(c => c._id === selectedCourse)?.name || 'Course'
+                                        },
+                                        courseName: activeSession.courseName || courses.find(c => c._id === selectedCourse)?.name || 'Course',
+                                        createdAt: activeSession.createdAt || new Date().toISOString()
+                                    }}
+                                    attendanceData={attendance}
+                                    showLiveButton={false}
                                 />
-                            </div>
-
-                            {/* Right: Real-time Stats Placeholder */}
-                            <div className="glass-panel p-6 rounded-2xl bg-white/50">
-                                <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                    <Users className="text-blue-600" /> Live Attendance
-                                </h3>
-                                <div className="space-y-3">
-                                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                                        <p className="text-sm text-blue-600 font-medium">Students Marked</p>
-                                        <p className="text-3xl font-bold text-blue-800">0</p>
-                                        <p className="text-xs text-blue-400 mt-1">Updates automatically</p>
-                                    </div>
-                                    <div className="text-center text-gray-400 text-sm mt-10">
-                                        List of students will appear here...
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </motion.div>

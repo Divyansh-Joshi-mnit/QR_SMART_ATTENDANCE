@@ -113,12 +113,58 @@ const TeacherDashboard = () => {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     const [courses, setCourses] = useState([]);
+    const [totalStudents, setTotalStudents] = useState(0);
+    const [totalSessions, setTotalSessions] = useState(0);
     
     // Fetch teacher's courses on load
     useEffect(() => {
-        API.get('/teacher/courses')
-            .then(res => setCourses(res.data))
-            .catch(err => console.error(err));
+        const fetchDashboardData = async () => {
+            try {
+                const coursesRes = await API.get('/teacher/courses');
+                const fetchedCourses = coursesRes.data || [];
+                setCourses(fetchedCourses);
+
+                if (!fetchedCourses.length) {
+                    setTotalStudents(0);
+                    setTotalSessions(0);
+                    return;
+                }
+
+                // Fetch enrolled students and sessions for each course
+                const [studentsPerCourse, sessionsPerCourse] = await Promise.all([
+                    Promise.all(
+                        fetchedCourses.map((course) =>
+                            API.get(`/teacher/courses/${course._id}/students`)
+                                .then((res) => res.data || [])
+                                .catch((err) => {
+                                    console.error('Error fetching students for course', course._id, err);
+                                    return [];
+                                })
+                        )
+                    ),
+                    Promise.all(
+                        fetchedCourses.map((course) =>
+                            API.get(`/teacher/courses/${course._id}/sessions`)
+                                .then((res) => res.data || [])
+                                .catch((err) => {
+                                    console.error('Error fetching sessions for course', course._id, err);
+                                    return [];
+                                })
+                        )
+                    )
+                ]);
+
+                const studentsCount = studentsPerCourse.reduce((sum, arr) => sum + arr.length, 0);
+                const sessionsCount = sessionsPerCourse.reduce((sum, arr) => sum + arr.length, 0);
+
+                setTotalStudents(studentsCount);
+                setTotalSessions(sessionsCount);
+            } catch (err) {
+                console.error('Error loading teacher dashboard data', err);
+            }
+        };
+
+        fetchDashboardData();
     }, []);
 
     return (
@@ -145,8 +191,8 @@ const TeacherDashboard = () => {
                 {/* Stats Grid using Shared Component */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <StatCard icon={BookOpen} label="Total Courses" value={courses.length} color="bg-purple-500" />
-                    <StatCard icon={Users} label="Total Students" value="--" color="bg-emerald-500" />
-                    <StatCard icon={Calendar} label="Sessions This Week" value="--" color="bg-orange-500" />
+                    <StatCard icon={Users} label="Total Students" value={totalStudents} color="bg-emerald-500" />
+                    <StatCard icon={Calendar} label="Total Sessions" value={totalSessions} color="bg-orange-500" />
                 </div>
 
                 {/* Courses List using Component */}

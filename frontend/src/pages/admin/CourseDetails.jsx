@@ -99,20 +99,20 @@ const CourseDetails = () => {
         }
     };
 
-    const handleDeleteStudent = async (studentId) => {
-        if (!studentId) return;
+    const handleUnenrollStudent = async (enrollmentId) => {
+        if (!enrollmentId) return;
         
-        if (!window.confirm('Are you sure you want to delete this student? This will also delete all their enrollments and attendance records. This action cannot be undone.')) {
+        if (!window.confirm('Are you sure you want to remove this student from this course? Their account and other course enrollments will be kept.')) {
             return;
         }
 
         try {
-            await API.delete(`/admin/students/${studentId}`);
-            alert('Student deleted successfully');
+            await API.delete(`/admin/courses/${courseId}/enrollments/${enrollmentId}`);
+            alert('Student removed from course successfully');
             fetchCourseDetails(); // Refresh the list
         } catch (error) {
-            console.error('Error deleting student:', error);
-            alert(error.response?.data?.message || 'Failed to delete student');
+            console.error('Error unenrolling student from course:', error);
+            alert(error.response?.data?.message || 'Failed to remove student from course');
         }
     };
 
@@ -279,10 +279,10 @@ const CourseDetails = () => {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleDeleteStudent(enrollment.student?._id);
+                                                        handleUnenrollStudent(enrollment._id);
                                                     }}
                                                     className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded transition-colors"
-                                                    title="Delete student"
+                                                    title="Remove from this course"
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>

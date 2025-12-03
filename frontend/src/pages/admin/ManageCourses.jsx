@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/common/Navbar';
 import API from '../../services/api';
-import { BookOpen, Users, Search, ArrowRight } from 'lucide-react';
+import { BookOpen, Users, Search, ArrowRight, ArrowLeft } from 'lucide-react';
 
 const ManageCourses = () => {
     const navigate = useNavigate();
@@ -43,6 +43,13 @@ const ManageCourses = () => {
                         <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Active Courses</h1>
                         <p className="text-slate-500 mt-1">Manage courses and student enrollments</p>
                     </div>
+                    <button
+                        onClick={() => navigate('/admin/dashboard')}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-800 bg-white border border-slate-200 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800 transition-colors"
+                    >
+                        <ArrowLeft size={18} />
+                        Back to Dashboard
+                    </button>
                 </div>
 
                 {/* Search Bar */}
@@ -112,4 +119,5 @@ const ManageCourses = () => {
 };
 
 export default ManageCourses;
+
 

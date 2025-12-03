@@ -197,7 +197,13 @@ const ViewAttendance = () => {
         setSelectedSession(session);
         try {
             const res = await API.get(`/teacher/sessions/${session._id}/attendance`);
-            setAttendanceData(res.data);
+            const rows = Array.isArray(res.data) ? res.data : [];
+            // Extra safety: ensure only this session's rows are kept
+            const filtered = rows.filter(r => {
+                const sId = r.session?._id || r.session;
+                return String(sId) === String(session._id);
+            });
+            setAttendanceData(filtered);
         } catch (error) {
             console.error("Error fetching attendance list", error);
             setAttendanceData([]); 
@@ -221,35 +227,6 @@ const ViewAttendance = () => {
                         {error}
                     </div>
                 )}
-
-                {/* Enrolled Students Section */}
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Users className="text-blue-600 dark:text-blue-400" size={20} />
-                        <h2 className="font-bold text-lg text-slate-800 dark:text-white">
-                            Enrolled Students ({enrolledStudents.length})
-                        </h2>
-                    </div>
-                    {enrolledStudents.length === 0 ? (
-                        <p className="text-sm text-slate-500">No students enrolled yet.</p>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {enrolledStudents.map((enrollment) => (
-                                <div
-                                    key={enrollment._id}
-                                    className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
-                                >
-                                    <p className="font-medium text-slate-800 dark:text-white">
-                                        {enrollment.student?.user?.name}
-                                    </p>
-                                    <p className="text-xs text-slate-500">
-                                        {enrollment.student?.rollNumber} • {enrollment.student?.department}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     
@@ -284,7 +261,15 @@ const ViewAttendance = () => {
                     <div className="md:col-span-2">
                         <AttendanceList 
                             sessionData={selectedSession} 
-                            attendanceData={attendanceData} 
+                            // Extra guard: only pass rows for the active session
+                            attendanceData={
+                                selectedSession && Array.isArray(attendanceData)
+                                    ? attendanceData.filter(r => {
+                                        const sId = r.session?._id || r.session;
+                                        return String(sId) === String(selectedSession._id);
+                                    })
+                                    : []
+                            }
                         />
                     </div>
                 </div>

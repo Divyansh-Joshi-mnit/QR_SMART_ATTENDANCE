@@ -31,6 +31,20 @@ const AddUserForm = ({ onSuccess }) => {
         }
     };
 
+    const handleClear = () => {
+        setRole('student');
+        setFormData({
+            name: '',
+            email: '',
+            password: 'password123',
+            department: '',
+            rollNumber: '',
+            semester: '',
+            designation: '',
+            phone: ''
+        });
+    };
+
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             
@@ -133,9 +147,23 @@ const AddUserForm = ({ onSuccess }) => {
                 </div>
             )}
 
-            <button type="submit" disabled={loading} className="w-full btn-primary mt-6">
-                {loading ? 'Processing...' : `Register ${role}`}
-            </button>
+            <div className="flex gap-3 mt-6">
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 btn-primary"
+                >
+                    {loading ? 'Processing...' : `Register ${role}`}
+                </button>
+                <button
+                    type="button"
+                    onClick={handleClear}
+                    disabled={loading}
+                    className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 text-sm font-medium"
+                >
+                    Clear
+                </button>
+            </div>
         </form>
     );
 };
