@@ -124,7 +124,6 @@ QR_SECRET_KEY=
 
 ## Useful Links
 - The project is deployed live at https://qrsmartattendance.vercel.app/
-- Demo Link 
 
 ## Contributors
 
