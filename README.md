@@ -2,7 +2,7 @@
 
 A modern web application for automated attendance tracking using QR codes, built with React, Node.js, Express, and MongoDB.
 
-## 🚀 Features
+## Features
 
 ### For Students
 - Scan QR codes to mark attendance
@@ -14,16 +14,14 @@ A modern web application for automated attendance tracking using QR codes, built
 - Generate time-limited QR codes for class sessions
 - View real-time attendance for ongoing sessions
 - Generate attendance reports (PDF/Excel)
-- Manage courses and view analytics
 
 ### For Admins
 - Manage users (students, teachers, admins)
 - Manage courses and departments
-- Bulk upload users via CSV
 - View institution-wide analytics
-- Assign teachers to courses
+- Assign teachers/students to courses
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - React 18 with Vite
@@ -41,25 +39,25 @@ A modern web application for automated attendance tracking using QR codes, built
 - bcryptjs for password hashing
 - qrcode for QR generation
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Node.js (v16 or higher)
 - MongoDB Atlas account (free tier)
-- npm or yarn
+- npm
 
-## 🔧 Installation
+## Installation
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/qr-attendance-system.git
-cd qr-attendance-system
+git clone https://github.com/Divyansh-Joshi-mnit/QR_SMART_ATTENDANCE.git
+cd QR_SMART_ATTENDANCE
 ```
 
 ### 2. Backend Setup
 ```bash
 cd backend
 npm install
-cp .env.example .env
+mkdir .env
 # Edit .env with your MongoDB URI and JWT secret
 npm start
 ```
@@ -75,21 +73,24 @@ npm run dev
 
 ### Backend (.env)
 ```
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
+MONGO_URI=
+JWT_SECRET=
 PORT=5000
 NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
+QR_CODE_EXPIRY_MINUTES=
+QR_SECRET_KEY=
 ```
 
-## 📱 Usage
+## Usage
 
 1. **Admin** creates users and courses
 2. **Teacher** starts a class session and generates QR code
 3. **Students** scan the QR code to mark attendance
 4. System validates and records attendance
-5. **Teacher/Admin** can generate reports
+5. **Teacher** can generate reports
 
-## 🔒 Security Features
+## Security Features
 
 - JWT-based authentication
 - Password hashing with bcrypt
@@ -98,7 +99,7 @@ NODE_ENV=development
 - Duplicate attendance prevention
 - CORS protection
 
-## 📊 Database Schema
+## Database Schema
 
 - Users (Student, Teacher, Admin)
 - Courses
@@ -107,34 +108,31 @@ NODE_ENV=development
 - Departments
 - Enrollments
 
-## 🚀 Deployment
+## Deployment
 
-### Backend (Render/Railway)
+### Backend (Vercel)
 1. Push code to GitHub
-2. Connect repository to Render/Railway
+2. Connect repository to Vercel
 3. Add environment variables
 4. Deploy
 
-### Frontend (Vercel/Netlify)
+### Frontend (Vercel)
 1. Push code to GitHub
-2. Connect repository to Vercel/Netlify
+2. Connect repository to Vercel
 3. Set build command: `npm run build`
 4. Set publish directory: `dist`
 5. Deploy
 
-## 📄 API Documentation
+## Useful Links
+- The project is deployed live at https://qrsmartattendance.vercel.app/
+- Demo Link 
 
-See [API_Documentation.md](docs/API_Documentation.md) for detailed API endpoints.
+## Contributors
 
-## 👥 Contributors
+- Pritam Barman(2023UCP1608) 
+- Harshvardhan(2023UCP1618)
+- Divyansh Joshi(2023UCP1622)
 
-- [Your Name] - Developer
-
-## 📝 License
+## License
 
 This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-- Software Engineering Principles Course
-- [Your Institution Name]
