@@ -55,7 +55,7 @@ const QRCodeDisplay = ({ qrData, expiresAt, courseName }) => {
             className={`relative flex items-center justify-center transition-all duration-300 ${
                 isFullscreen
                     ? 'fixed inset-0 z-50 bg-white'
-                    : 'p-6 bg-white rounded-2xl shadow-xl mx-auto border-4 border-slate-900 flex flex-col items-center max-w-sm'
+                    : 'p-6 glass-panel rounded-2xl shadow-xl mx-auto border border-white/40 bg-white/70 backdrop-blur-md flex flex-col items-center max-w-sm'
             }`}
         >
             {/* Non-fullscreen header */}
@@ -76,7 +76,7 @@ const QRCodeDisplay = ({ qrData, expiresAt, courseName }) => {
             {isFullscreen && (
                 <button
                     onClick={toggleFullscreen}
-                    className="absolute top-4 right-4 p-2 rounded-full bg-black/60 hover:bg-black text-white transition-colors"
+                    className="absolute top-4 right-4 p-2 rounded-full bg-slate-900/60 hover:bg-slate-800 text-white transition-all shadow-lg"
                     aria-label="Minimize QR Code"
                 >
                     <Minimize2 size={20} />
@@ -93,7 +93,7 @@ const QRCodeDisplay = ({ qrData, expiresAt, courseName }) => {
                 <QRCode
                     value={isExpired ? "EXPIRED_SESSION" : JSON.stringify(qrData)}
                     size={isFullscreen ? 420 : 200}
-                    fgColor={isExpired ? "#94a3b8" : "#000000"}
+                    fgColor={isExpired ? "#94a3b8" : "#0f172a"}
                     bgColor="#ffffff"
                 />
             </div>
