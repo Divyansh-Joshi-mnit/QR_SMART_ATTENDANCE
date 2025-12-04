@@ -13,7 +13,7 @@ A modern web application for automated attendance tracking using QR codes, built
 ### For Teachers
 - Generate time-limited QR codes for class sessions
 - View real-time attendance for ongoing sessions
-- Generate attendance reports (PDF/Excel)
+- Generate attendance reports (Excel/CSV)
 
 ### For Admins
 - Manage users (students, teachers, admins)
@@ -29,7 +29,6 @@ A modern web application for automated attendance tracking using QR codes, built
 - Axios for API calls
 - Tailwind CSS for styling
 - html5-qrcode for QR scanning
-- recharts for data visualization
 
 ### Backend
 - Node.js
@@ -37,7 +36,7 @@ A modern web application for automated attendance tracking using QR codes, built
 - MongoDB with Mongoose
 - JWT for authentication
 - bcryptjs for password hashing
-- qrcode for QR generation
+- qrcodejs for QR generation
 
 ## Prerequisites
 
@@ -95,7 +94,7 @@ QR_SECRET_KEY=
 - JWT-based authentication
 - Password hashing with bcrypt
 - Role-based access control (RBAC)
-- Time-limited QR codes (10 minutes)
+- Time-limited QR codes
 - Duplicate attendance prevention
 - CORS protection
 
